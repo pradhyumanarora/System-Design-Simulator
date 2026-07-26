@@ -5,10 +5,11 @@ import { ComponentPalette } from './components/sidebar/ComponentPalette';
 import { ConfigPanel } from './components/config/ConfigPanel';
 import { MetricsPanel } from './components/metrics/MetricsPanel';
 import { ScorePanel } from './components/scoring/ScorePanel';
+import { DesignNotesPanel } from './components/notes/DesignNotesPanel';
 import { useDesignStore } from './store/useDesignStore';
 import { useSimulation } from './simulation/useSimulation';
 import { scoreDesign } from './scoring/scorer';
-import { saveDesign, loadDesign, exportAsPng } from './persistence/storage';
+import { saveDesign, loadDesign, clearDesign, exportAsPng } from './persistence/storage';
 import { SEED_PROBLEMS } from './problems/seedProblems';
 import type { ComponentKind } from '@sds/shared/src/index';
 import type { ScoreResult } from './scoring/scorer';
@@ -16,11 +17,12 @@ import { socket } from './socket';
 import './index.css';
 
 export default function App() {
-  const { addComponent, clearCanvas, setDesign, components, edges } = useDesignStore();
+  const { addComponent, clearCanvas, setDesign, components, edges, notes } = useDesignStore();
   const [ingressQps, setIngressQps] = useState(1_000);
   const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [showProblems, setShowProblems] = useState(false);
+  const [showDesignNotes, setShowDesignNotes] = useState(false);
 
   const metrics = useSimulation(ingressQps);
 
@@ -45,10 +47,18 @@ export default function App() {
 
   // Auto-save on every change
   useEffect(() => {
-    if (components.length > 0 || edges.length > 0) {
-      saveDesign({ components, edges });
+    if (
+      components.length > 0 ||
+      edges.length > 0 ||
+      notes.functionalRequirements.length > 0 ||
+      notes.apiEndpoints.length > 0 ||
+      Object.values(notes.nonFunctionalRequirements).some(Boolean) ||
+      notes.dataModel ||
+      notes.tradeOffs
+    ) {
+      saveDesign({ components, edges, notes });
     }
-  }, [components, edges]);
+  }, [components, edges, notes]);
 
   // Restore from localStorage on first load — guard against StrictMode double-invoke
   // by checking whether a component with the same id already exists before adding.
@@ -57,7 +67,7 @@ export default function App() {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
     const saved = loadDesign();
-    if (saved && saved.components.length > 0) {
+    if (saved) {
       setDesign(saved);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,7 +93,7 @@ export default function App() {
     (id: string) => {
       const problem = SEED_PROBLEMS.find((p) => p.id === id);
       if (!problem) return;
-      setDesign({ components: problem.components, edges: problem.edges });
+      setDesign({ components: problem.components, edges: problem.edges, notes: problem.notes });
       setIngressQps(problem.targetQps);
       setActiveProblemId(id);
       setShowProblems(false);
@@ -144,11 +154,13 @@ export default function App() {
         <div style={{ flex: 1 }} />
 
         <HeaderBtn onClick={() => setShowProblems((v) => !v)}>📋 Problems</HeaderBtn>
+        <HeaderBtn onClick={() => setShowDesignNotes((value) => !value)}>📝 Design Notes</HeaderBtn>
         <HeaderBtn onClick={handleScore}>🏆 Score</HeaderBtn>
         <HeaderBtn onClick={() => exportAsPng()}>💾 Export PNG</HeaderBtn>
         <HeaderBtn
           onClick={() => {
             clearCanvas();
+            clearDesign();
             setActiveProblemId(null);
           }}
         >
@@ -218,6 +230,9 @@ export default function App() {
 
       {scoreResult && (
         <ScorePanel result={scoreResult} onClose={() => setScoreResult(null)} />
+      )}
+      {showDesignNotes && (
+        <DesignNotesPanel onClose={() => setShowDesignNotes(false)} />
       )}
     </div>
   );

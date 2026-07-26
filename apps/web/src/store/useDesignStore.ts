@@ -1,10 +1,17 @@
 import { create } from 'zustand';
-import type { ComponentSpec, DesignState, EdgeSpec, SessionEvent } from '@sds/shared/src/index';
+import type {
+  ComponentSpec,
+  DesignNotes,
+  DesignState,
+  EdgeSpec,
+  SessionEvent,
+} from '@sds/shared/src/index';
 import { addEdge, applyEdgeChanges } from '@xyflow/react';
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import { socket } from '../socket';
 import { getHandleIds } from '../components/canvas/handleIdMap';
 import type { SystemNode } from '../components/canvas/nodes';
+import { createEmptyDesignNotes, normalizeDesignNotes } from '../designNotes';
 
 const ROOM_ID = 'default-room';
 
@@ -18,11 +25,15 @@ function emitEvent(type: SessionEvent['type'], payload: unknown) {
   socket.emit('session:event', ROOM_ID, event);
 }
 
-function normalizeDesign({ components, edges }: DesignState): DesignState {
+function normalizeDesign({ components, edges, notes }: DesignState): {
+  components: ComponentSpec[];
+  edges: EdgeSpec[];
+  notes: DesignNotes;
+} {
   const componentsById = new Map(components.map((component) => [component.id, component]));
   return {
     components,
-    edges: edges.map((edge) => {
+    edges: edges.map((edge): EdgeSpec => {
       const source = componentsById.get(edge.source);
       const target = componentsById.get(edge.target);
       return {
@@ -32,12 +43,14 @@ function normalizeDesign({ components, edges }: DesignState): DesignState {
         type: 'orange',
       };
     }),
+    notes: normalizeDesignNotes(notes),
   };
 }
 
 interface DesignStore {
   components: ComponentSpec[];
   edges: EdgeSpec[];
+  notes: DesignNotes;
   selectedId: string | null;
 
   addComponent: (component: ComponentSpec, remote?: boolean) => void;
@@ -49,6 +62,7 @@ interface DesignStore {
   onConnect: (connection: Connection, remote?: boolean) => void;
 
   setSelected: (id: string | null) => void;
+  setNotes: (notes: DesignNotes) => void;
   setDesign: (design: DesignState) => void;
   clearCanvas: () => void;
 }
@@ -83,13 +97,19 @@ export const useDesignStore = create<DesignStore>((set, get) => {
   });
 
   // Restore room state when joining (server sends current state to new joiner).
-  socket.on('room:state', (state: { components: ComponentSpec[]; edges: EdgeSpec[] }) => {
-    set({ ...normalizeDesign(state), selectedId: null });
+  socket.on('room:state', (state: DesignState) => {
+    const normalized = normalizeDesign(state);
+    set((current) => ({
+      ...normalized,
+      notes: state.notes ? normalized.notes : current.notes,
+      selectedId: null,
+    }));
   });
 
   return {
     components: [],
     edges: [],
+    notes: createEmptyDesignNotes(),
     selectedId: null,
 
     addComponent: (component, remote = false) => {
@@ -211,8 +231,15 @@ export const useDesignStore = create<DesignStore>((set, get) => {
 
     setSelected: (id) => set({ selectedId: id }),
 
+    setNotes: (notes) => set({ notes }),
+
     setDesign: (design) => set({ ...normalizeDesign(design), selectedId: null }),
 
-    clearCanvas: () => set({ components: [], edges: [], selectedId: null }),
+    clearCanvas: () => set({
+      components: [],
+      edges: [],
+      notes: createEmptyDesignNotes(),
+      selectedId: null,
+    }),
   };
 });

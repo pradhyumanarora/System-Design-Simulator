@@ -1,4 +1,10 @@
-import type { ComponentSpec, EdgeSpec } from '@sds/shared/src/index';
+import type {
+  ApiEndpointSpec,
+  ComponentSpec,
+  DesignNotes,
+  EdgeSpec,
+  NonFunctionalRequirements,
+} from '@sds/shared/src/index';
 
 export interface SeedProblem {
   id: string;
@@ -7,6 +13,7 @@ export interface SeedProblem {
   targetQps: number;
   components: ComponentSpec[];
   edges: EdgeSpec[];
+  notes: DesignNotes;
 }
 
 const p = (id: string, kind: ComponentSpec['kind'], label: string, x: number, y: number, config: ComponentSpec['config']): ComponentSpec => ({
@@ -15,6 +22,28 @@ const p = (id: string, kind: ComponentSpec['kind'], label: string, x: number, y:
 
 const e = (source: string, target: string): EdgeSpec => ({
   id: `e-${source}-${target}`, source, target,
+});
+
+const notes = (
+  prefix: string,
+  requirements: string[],
+  nfr: NonFunctionalRequirements,
+  apiEndpoints: Array<Omit<ApiEndpointSpec, 'id'>>,
+  dataModel: string,
+  tradeOffs: string,
+): DesignNotes => ({
+  functionalRequirements: requirements.map((text, index) => ({
+    id: `${prefix}-fr-${index + 1}`,
+    text,
+    completed: false,
+  })),
+  nonFunctionalRequirements: nfr,
+  apiEndpoints: apiEndpoints.map((endpoint, index) => ({
+    ...endpoint,
+    id: `${prefix}-api-${index + 1}`,
+  })),
+  dataModel,
+  tradeOffs,
 });
 
 export const SEED_PROBLEMS: SeedProblem[] = [
@@ -36,6 +65,35 @@ export const SEED_PROBLEMS: SeedProblem[] = [
     edges: [
       e('c1','c2'), e('c2','c3'), e('c3','c4'), e('c4','c5'), e('c4','c6'),
     ],
+    notes: notes(
+      'url',
+      ['Create a short URL for a valid long URL', 'Redirect a short code to its original URL'],
+      {
+        availability: '99.99% for redirects',
+        latency: 'p99 redirect latency below 20 ms',
+        scale: '100K reads/sec and 10K writes/sec',
+        consistency: 'Strong consistency for creation; eventual consistency is acceptable for analytics',
+        durability: 'Short-link mappings must not be lost',
+      },
+      [
+        {
+          method: 'POST',
+          path: '/v1/urls',
+          description: 'Create a short URL',
+          request: '{ "longUrl": "https://example.com/page" }',
+          response: '{ "shortCode": "aB3x9" }',
+        },
+        {
+          method: 'GET',
+          path: '/:shortCode',
+          description: 'Redirect to the original URL',
+          request: '',
+          response: 'HTTP 302 Location: https://example.com/page',
+        },
+      ],
+      'UrlMapping(shortCode PK, longUrl, userId, createdAt, expiresAt)\nIndex by userId for listing links.',
+      'A random code avoids sequence leakage but requires collision checks. Cache hot redirects while keeping the database authoritative.',
+    ),
   },
 
   // ── 2. Twitter Feed ─────────────────────────────────────────────────────────
@@ -59,6 +117,35 @@ export const SEED_PROBLEMS: SeedProblem[] = [
       e('t1','t2'), e('t1','t3'), e('t3','t4'), e('t4','t5'),
       e('t5','t6'), e('t5','t7'), e('t5','t8'),
     ],
+    notes: notes(
+      'feed',
+      ['Publish a post', 'Read a personalized home timeline', 'Follow or unfollow another user'],
+      {
+        availability: '99.99% for timeline reads',
+        latency: 'p99 feed reads below 200 ms',
+        scale: '500K reads/sec, 5K writes/sec and 50M daily users',
+        consistency: 'Eventual consistency for feed freshness',
+        durability: 'Published posts must be durable',
+      },
+      [
+        {
+          method: 'POST',
+          path: '/v1/posts',
+          description: 'Publish a post',
+          request: '{ "text": "hello" }',
+          response: '{ "postId": "p123" }',
+        },
+        {
+          method: 'GET',
+          path: '/v1/feed?cursor=...',
+          description: 'Fetch a paginated home timeline',
+          request: '',
+          response: '{ "items": [], "nextCursor": "..." }',
+        },
+      ],
+      'Post(postId PK, authorId, body, createdAt)\nFollow(followerId, followeeId)\nFeedEntry(userId partition key, createdAt sort key, postId)',
+      'Fan-out on write makes reads fast but is expensive for celebrity accounts; use a hybrid fan-out strategy.',
+    ),
   },
 
   // ── 3. Rate Limiter ─────────────────────────────────────────────────────────
@@ -78,6 +165,26 @@ export const SEED_PROBLEMS: SeedProblem[] = [
     edges: [
       e('r1','r2'), e('r2','r3'), e('r2','r4'), e('r4','r5'),
     ],
+    notes: notes(
+      'rate',
+      ['Check whether a request is allowed', 'Configure quotas by client and API'],
+      {
+        availability: 'Fail open or fail closed must be configurable',
+        latency: 'Add less than 5 ms to each request',
+        scale: '200K checks/sec across 20 regions',
+        consistency: 'Small temporary quota drift is acceptable',
+        durability: 'Configuration must be durable; counters may be ephemeral',
+      },
+      [{
+        method: 'POST',
+        path: '/v1/check',
+        description: 'Consume quota for a request',
+        request: '{ "clientId": "c1", "resource": "/search" }',
+        response: '{ "allowed": true, "remaining": 42 }',
+      }],
+      'RateLimitPolicy(clientId, resource, limit, window)\nCounter key: clientId:resource:window with atomic increment and TTL.',
+      'Token bucket supports bursts; a fixed window is simpler but creates boundary spikes. Regional counters trade exactness for latency.',
+    ),
   },
 
   // ── 4. File Upload System ───────────────────────────────────────────────────
@@ -100,6 +207,26 @@ export const SEED_PROBLEMS: SeedProblem[] = [
       e('f1','f2'), e('f2','f3'), e('f3','f4'), e('f3','f5'),
       e('f5','f6'), e('f6','f7'), e('f4','f7'),
     ],
+    notes: notes(
+      'upload',
+      ['Start a resumable upload', 'Upload file parts', 'Track processing status', 'Download a completed file'],
+      {
+        availability: 'Uploads must resume after client or server failures',
+        latency: 'Metadata operations below 200 ms',
+        scale: '10K concurrent uploads with files up to 5 GB',
+        consistency: 'Strong consistency for upload completion metadata',
+        durability: 'Uploaded objects require multi-zone durability',
+      },
+      [{
+        method: 'POST',
+        path: '/v1/uploads',
+        description: 'Start a multipart upload',
+        request: '{ "name": "video.mp4", "size": 5368709120 }',
+        response: '{ "uploadId": "u123", "partUrls": [] }',
+      }],
+      'File(fileId PK, ownerId, objectKey, status, size, checksum)\nUploadPart(uploadId, partNumber, checksum, status)',
+      'Direct-to-object-storage uploads reduce API load. Multipart uploads add cleanup complexity for abandoned sessions.',
+    ),
   },
 
   // ── 5. Notification Service ─────────────────────────────────────────────────
@@ -120,5 +247,25 @@ export const SEED_PROBLEMS: SeedProblem[] = [
     edges: [
       e('n1','n2'), e('n2','n3'), e('n3','n4'), e('n3','n5'), e('n3','n6'),
     ],
+    notes: notes(
+      'notify',
+      ['Submit a notification', 'Deliver through email, SMS or push', 'Track delivery status', 'Deduplicate retries'],
+      {
+        availability: 'Accept notification requests during downstream provider outages',
+        latency: 'Queue requests within 100 ms',
+        scale: 'One million notifications per minute',
+        consistency: 'At-least-once delivery with idempotent consumers',
+        durability: 'Queued notifications and delivery status must survive failures',
+      },
+      [{
+        method: 'POST',
+        path: '/v1/notifications',
+        description: 'Queue a notification',
+        request: '{ "userId": "u1", "channel": "push", "templateId": "welcome" }',
+        response: '{ "notificationId": "n123", "status": "queued" }',
+      }],
+      'Notification(id PK, userId, channel, payload, status, idempotencyKey)\nDeliveryAttempt(notificationId, provider, attempt, result, createdAt)',
+      'At-least-once delivery is practical but requires idempotency. Provider failover improves availability but may increase cost.',
+    ),
   },
 ];
