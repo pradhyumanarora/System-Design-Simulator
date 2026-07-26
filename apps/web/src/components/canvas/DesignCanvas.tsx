@@ -1,40 +1,58 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   BackgroundVariant,
-  ConnectionMode,
 } from '@xyflow/react';
+import type { Edge, NodeChange, NodeTypes } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import './xy-theme.css';
 import { useDesignStore } from '../../store/useDesignStore';
-import {
-  ClientNode, ApiGatewayNode, LoadBalancerNode, WebServerNode,
-  DatabaseSqlNode, DatabaseNoSqlNode, CacheNode, MessageQueueNode,
-  CdnNode, StorageNode, DnsNode,
-} from './nodes';
+import { GenericSystemNode } from './nodes';
+import type { SystemNode } from './nodes';
+import { CustomOrangeEdge } from './CustomOrangeEdge';
 
-// Move nodeTypes outside component to prevent recreation on every render
-const nodeTypes = {
-  client: ClientNode,
-  'api-gateway': ApiGatewayNode,
-  'load-balancer': LoadBalancerNode,
-  'web-server': WebServerNode,
-  'database-sql': DatabaseSqlNode,
-  'database-nosql': DatabaseNoSqlNode,
-  cache: CacheNode,
-  'message-queue': MessageQueueNode,
-  cdn: CdnNode,
-  storage: StorageNode,
-  dns: DnsNode,
+type SystemEdge = Edge<Record<string, never>, 'orange'>;
+
+const nodeTypes: NodeTypes = {
+  client:           GenericSystemNode,
+  'api-gateway':    GenericSystemNode,
+  'load-balancer':  GenericSystemNode,
+  'web-server':     GenericSystemNode,
+  'database-sql':   GenericSystemNode,
+  'database-nosql': GenericSystemNode,
+  cache:            GenericSystemNode,
+  'message-queue':  GenericSystemNode,
+  cdn:              GenericSystemNode,
+  storage:          GenericSystemNode,
+  dns:              GenericSystemNode,
 };
 
+const edgeTypes = {
+  orange: CustomOrangeEdge,
+};
+
+const defaultEdgeOptions = {
+  type: 'orange',
+} as const;
+
 export function DesignCanvas() {
-  const { components, edges, onNodesChange, onEdgesChange, onConnect, setSelected } =
-    useDesignStore();
+  const [nodeMeasurements, setNodeMeasurements] = useState<
+    Record<string, { width: number; height: number }>
+  >({});
+  const {
+    components,
+    edges,
+    selectedId,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    setSelected,
+  } = useDesignStore();
 
   const handleNodeClick = useCallback(
-    (_: React.MouseEvent, node: { id: string }) => {
+    (_: React.MouseEvent, node: SystemNode) => {
       setSelected(node.id);
     },
     [setSelected]
@@ -44,48 +62,58 @@ export function DesignCanvas() {
     setSelected(null);
   }, [setSelected]);
 
-  // Memoize nodes to prevent constant recalculation
-  const nodes = useMemo(() => 
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<SystemNode>[]) => {
+      const measurements = changes.filter(
+        (change) => change.type === 'dimensions' && change.dimensions
+      );
+
+      if (measurements.length > 0) {
+        setNodeMeasurements((current) => {
+          const next = { ...current };
+          for (const change of measurements) {
+            if (change.type === 'dimensions' && change.dimensions) {
+              next[change.id] = change.dimensions;
+            }
+          }
+          return next;
+        });
+      }
+
+      onNodesChange(changes);
+    },
+    [onNodesChange]
+  );
+
+  const nodes = useMemo<SystemNode[]>(() =>
     components.map((c) => ({
       id: c.id,
       type: c.kind,
       position: c.position,
       data: { label: c.label, config: c.config },
+      selected: c.id === selectedId,
+      initialWidth: 120,
+      initialHeight: 80,
+      measured: nodeMeasurements[c.id],
     })),
-    [components]
+    [components, nodeMeasurements, selectedId]
   );
-
-  // Memoize edges to prevent constant recalculation
-  const styledEdges = useMemo(() => 
-    edges.map((e) => ({
-      ...e,
-      style: { stroke: '#f97316', strokeWidth: 3 },
-      animated: true,
-    })),
-    [edges]
-  );
-
-  console.log('[SDS:canvas] nodes:', nodes.length, nodes.map(n => n.type));
-  console.log('[SDS:canvas] edges:', styledEdges.length, styledEdges);
 
   return (
-    <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
-      {/* Debug info */}
-      <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.7)', color: 'white', padding: '10px', zIndex: 10, fontSize: '12px' }}>
-        <div>Nodes: {nodes.length}</div>
-        <div>Edges: {styledEdges.length}</div>
-      </div>
-      <ReactFlow
+    <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <ReactFlow<SystemNode, SystemEdge>
         nodes={nodes}
-        edges={styledEdges as any}
+        edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
-        nodesConnectable={true}
-        connectionMode={ConnectionMode.Loose}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
         style={{ background: '#0f172a', flex: 1 }}
       >
         <Background color="#1e293b" variant={BackgroundVariant.Dots} />

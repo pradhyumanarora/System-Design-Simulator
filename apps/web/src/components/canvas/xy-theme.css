@@ -1,0 +1,67 @@
+.react-flow {
+  --xy-background-color: #0f172a;
+  --xy-theme-selected: #6366f1;
+  --xy-theme-hover: #475569;
+  --xy-theme-edge-hover: #f97316;
+  --xy-theme-color-focus: #1e293b;
+  --xy-node-border-default: 1px solid #334155;
+  --xy-node-boxshadow-default: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --xy-node-border-radius-default: 10px;
+  --xy-handle-background-color-default: #f97316;
+  --xy-handle-border-color-default: #f97316;
+  --xy-edge-label-color-default: #94a3b8;
+  --xy-node-background-color-default: #1e293b;
+  --xy-theme-panel-bg: #1e293b;
+  --xy-theme-panel-text: #e2e8f0;
+  --xy-theme-focus-border: #334155;
+  --xy-theme-subtle-border: #334155;
+}
+
+.react-flow {
+  background-color: var(--xy-background-color);
+}
+
+.react-flow__node {
+  box-shadow: var(--xy-node-boxshadow-default);
+  border-radius: var(--xy-node-border-radius-default);
+  background-color: var(--xy-node-background-color-default);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 12px;
+  flex-direction: column;
+  border: var(--xy-node-border-default);
+  color: #e2e8f0;
+}
+
+.react-flow__node.selectable:focus {
+  box-shadow: 0 0 0 3px #6366f180;
+  border-color: var(--xy-theme-focus-border);
+}
+
+.react-flow__node.selectable:hover,
+.react-flow__node.draggable:hover {
+  border-color: var(--xy-theme-hover);
+}
+
+.react-flow__node.selectable.selected {
+  border-color: var(--xy-theme-selected);
+  box-shadow: 0 0 0 3px #6366f180;
+}
+
+.react-flow__edge.selectable:hover .react-flow__edge-path,
+.react-flow__edge.selectable.selected .react-flow__edge-path {
+  stroke: var(--xy-theme-edge-hover);
+}
+
+.react-flow__handle {
+  background-color: var(--xy-handle-background-color-default);
+  border-color: var(--xy-handle-border-color-default);
+}
+
+.react-flow__handle.connectionindicator:hover {
+  pointer-events: all;
+  border-color: #fb923c;
+  background-color: #fb923c;
+}

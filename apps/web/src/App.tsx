@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
 import { DesignCanvas } from './components/canvas/DesignCanvas';
 import { ComponentPalette } from './components/sidebar/ComponentPalette';
 import { ConfigPanel } from './components/config/ConfigPanel';
@@ -15,7 +16,7 @@ import { socket } from './socket';
 import './index.css';
 
 export default function App() {
-  const { addComponent, clearCanvas, components, edges } = useDesignStore();
+  const { addComponent, clearCanvas, setDesign, components, edges } = useDesignStore();
   const [ingressQps, setIngressQps] = useState(1_000);
   const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
@@ -57,8 +58,7 @@ export default function App() {
     hasRestoredRef.current = true;
     const saved = loadDesign();
     if (saved && saved.components.length > 0) {
-      clearCanvas();
-      for (const c of saved.components) addComponent(c, true);
+      setDesign(saved);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,13 +83,12 @@ export default function App() {
     (id: string) => {
       const problem = SEED_PROBLEMS.find((p) => p.id === id);
       if (!problem) return;
-      clearCanvas();
-      for (const c of problem.components) addComponent(c, true);
+      setDesign({ components: problem.components, edges: problem.edges });
       setIngressQps(problem.targetQps);
       setActiveProblemId(id);
       setShowProblems(false);
     },
-    [clearCanvas, addComponent]
+    [setDesign]
   );
 
   const handleScore = useCallback(() => {
@@ -204,9 +203,11 @@ export default function App() {
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <ComponentPalette onAdd={handleAdd} />
-        <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
-          <DesignCanvas />
-        </main>
+        <ReactFlowProvider>
+          <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
+            <DesignCanvas />
+          </main>
+        </ReactFlowProvider>
         <ConfigPanel />
         <MetricsPanel
           metrics={metrics}

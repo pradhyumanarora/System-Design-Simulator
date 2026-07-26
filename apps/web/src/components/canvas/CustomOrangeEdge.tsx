@@ -1,4 +1,5 @@
-import { BaseEdge, getStraightPath } from '@xyflow/react';
+import { BaseEdge, getSmoothStepPath } from '@xyflow/react';
+import type { EdgeProps } from '@xyflow/react';
 
 export function CustomOrangeEdge({
   id,
@@ -6,22 +7,23 @@ export function CustomOrangeEdge({
   sourceY,
   targetX,
   targetY,
-}: any) {
-  const [edgePath] = getStraightPath({
+  sourcePosition,
+  targetPosition,
+}: EdgeProps) {
+  const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
+    sourcePosition,
     targetX,
     targetY,
+    targetPosition,
   });
 
   return (
     <BaseEdge
       id={id}
       path={edgePath}
-      style={{
-        stroke: '#f97316',
-        strokeWidth: 3,
-      }}
+      style={{ stroke: '#f97316', strokeWidth: 3 }}
     />
   );
 }

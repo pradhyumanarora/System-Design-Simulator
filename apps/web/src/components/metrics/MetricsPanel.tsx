@@ -97,10 +97,12 @@ export function MetricsPanel({ metrics, ingressQps, onIngressChange }: MetricsPa
 
       {/* Ingress QPS control */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b' }}>
-        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
+        <label htmlFor="ingress-qps" style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
           Ingress QPS
         </label>
         <input
+          id="ingress-qps"
+          name="ingressQps"
           type="number"
           min={1}
           value={ingressQps}

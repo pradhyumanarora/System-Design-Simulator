@@ -1,7 +1,17 @@
-import { Handle, Position } from '@xyflow/react';
-import type { NodeProps } from '@xyflow/react';
+import { memo } from 'react';
+import { Handle, Position, useNodeConnections } from '@xyflow/react';
+import type { Node, NodeProps } from '@xyflow/react';
+import type { ComponentKind, ComponentConfig } from '@sds/shared/src/index';
+import { nodeConfigs } from '../handleIdMap';
 
-function NodeBase({
+export interface NodeData extends Record<string, unknown> {
+  label: string;
+  config: ComponentConfig;
+}
+
+export type SystemNode = Node<NodeData, ComponentKind>;
+
+function NodeShell({
   label,
   emoji,
   selected,
@@ -21,6 +31,7 @@ function NodeBase({
         padding: '8px 14px',
         width: 120,
         height: 80,
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -39,112 +50,45 @@ function NodeBase({
   );
 }
 
-export function ClientNode({ data, selected }: NodeProps) {
+const HANDLE_STYLE = { background: '#f97316', width: 12, height: 12 };
+
+function GenericSystemNodeInner({ id, type, data, selected, isConnectable }: NodeProps<SystemNode>) {
+  const config = nodeConfigs[type];
+  const incoming = useNodeConnections({
+    id,
+    handleType: 'target',
+    handleId: config.handleIn,
+  });
+  const outgoing = useNodeConnections({
+    id,
+    handleType: 'source',
+    handleId: config.handleOut,
+  });
+
   return (
     <>
-      <Handle id="client_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Client'} emoji="💻" selected={!!selected} color="#1e293b" />
-      <Handle id="client_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
+      <Handle
+        id={config.handleIn}
+        type="target"
+        position={Position.Left}
+        isConnectable={isConnectable && incoming.length < config.maxConnections}
+        style={HANDLE_STYLE}
+      />
+      <NodeShell
+        label={data.label}
+        emoji={config.emoji}
+        selected={selected}
+        color={config.color}
+      />
+      <Handle
+        id={config.handleOut}
+        type="source"
+        position={Position.Right}
+        isConnectable={isConnectable && outgoing.length < config.maxConnections}
+        style={HANDLE_STYLE}
+      />
     </>
   );
 }
 
-export function ApiGatewayNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="gateway_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'API Gateway'} emoji="🚪" selected={!!selected} color="#0f172a" />
-      <Handle id="gateway_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function LoadBalancerNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="lb_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Load Balancer'} emoji="⚖️" selected={!!selected} color="#0c1a2e" />
-      <Handle id="lb_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function WebServerNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="server_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Web Server'} emoji="🖥️" selected={!!selected} color="#172554" />
-      <Handle id="server_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function DatabaseSqlNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="sqldb_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'SQL Database'} emoji="🗄️" selected={!!selected} color="#14532d" />
-      <Handle id="sqldb_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function DatabaseNoSqlNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="nosqldb_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'NoSQL Database'} emoji="🌿" selected={!!selected} color="#14532d" />
-      <Handle id="nosqldb_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function CacheNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="cache_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Cache'} emoji="⚡" selected={!!selected} color="#78350f" />
-      <Handle id="cache_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function MessageQueueNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="mq_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Message Queue'} emoji="📫" selected={!!selected} color="#3b0764" />
-      <Handle id="mq_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function CdnNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="cdn_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'CDN'} emoji="🌐" selected={!!selected} color="#0c4a6e" />
-      <Handle id="cdn_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function StorageNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="storage_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'Storage'} emoji="🗂️" selected={!!selected} color="#422006" />
-      <Handle id="storage_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
-
-export function DnsNode({ data, selected }: NodeProps) {
-  return (
-    <>
-      <Handle id="dns_in" type="target" position={Position.Left} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-      <NodeBase label={(data as any).label ?? 'DNS'} emoji="🔡" selected={!!selected} color="#1c1917" />
-      <Handle id="dns_out" type="source" position={Position.Right} isConnectable={true} style={{ background: '#f97316', width: 12, height: 12 }} />
-    </>
-  );
-}
+export const GenericSystemNode = memo(GenericSystemNodeInner);

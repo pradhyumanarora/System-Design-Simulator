@@ -50,6 +50,7 @@ function applyEvent(roomId: string, event: SessionEvent) {
     case 'component:remove': {
       const id = event.payload as string;
       state.components = state.components.filter((c) => c.id !== id);
+      state.edges = state.edges.filter((edge) => edge.source !== id && edge.target !== id);
       break;
     }
     case 'edge:add':

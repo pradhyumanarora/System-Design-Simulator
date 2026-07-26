@@ -32,6 +32,9 @@ export interface EdgeSpec {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  type?: 'orange';
 }
 
 export interface DesignState {
