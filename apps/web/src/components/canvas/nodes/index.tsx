@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Handle, Position, useNodeConnections } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import type { ComponentKind, ComponentConfig } from '@sds/shared/src/index';
 import { nodeConfigs } from '../handleIdMap';
@@ -52,18 +52,8 @@ function NodeShell({
 
 const HANDLE_STYLE = { background: '#f97316', width: 12, height: 12 };
 
-function GenericSystemNodeInner({ id, type, data, selected, isConnectable }: NodeProps<SystemNode>) {
+function GenericSystemNodeInner({ type, data, selected, isConnectable }: NodeProps<SystemNode>) {
   const config = nodeConfigs[type];
-  const incoming = useNodeConnections({
-    id,
-    handleType: 'target',
-    handleId: config.handleIn,
-  });
-  const outgoing = useNodeConnections({
-    id,
-    handleType: 'source',
-    handleId: config.handleOut,
-  });
 
   return (
     <>
@@ -71,7 +61,7 @@ function GenericSystemNodeInner({ id, type, data, selected, isConnectable }: Nod
         id={config.handleIn}
         type="target"
         position={Position.Left}
-        isConnectable={isConnectable && incoming.length < config.maxConnections}
+        isConnectable={isConnectable}
         style={HANDLE_STYLE}
       />
       <NodeShell
@@ -84,7 +74,7 @@ function GenericSystemNodeInner({ id, type, data, selected, isConnectable }: Nod
         id={config.handleOut}
         type="source"
         position={Position.Right}
-        isConnectable={isConnectable && outgoing.length < config.maxConnections}
+        isConnectable={isConnectable}
         style={HANDLE_STYLE}
       />
     </>
