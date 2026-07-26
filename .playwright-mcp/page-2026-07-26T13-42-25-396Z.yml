@@ -1,0 +1,85 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - generic [ref=f1e5]: ⚙️ System Design Simulator
+    - button "📋 Problems" [ref=f1e6] [cursor=pointer]
+    - button "🏆 Score" [ref=f1e7] [cursor=pointer]
+    - button "💾 Export PNG" [ref=f1e8] [cursor=pointer]
+    - button "🗑 Clear" [ref=f1e9] [cursor=pointer]
+  - generic [ref=f1e10]:
+    - complementary [ref=f1e11]:
+      - generic [ref=f1e12]: COMPONENTS
+      - button "💻 Client" [active] [ref=f1e13] [cursor=pointer]:
+        - generic [ref=f1e14]: 💻
+        - generic [ref=f1e15]: Client
+      - button "🔡 DNS" [ref=f1e16] [cursor=pointer]:
+        - generic [ref=f1e17]: 🔡
+        - generic [ref=f1e18]: DNS
+      - button "🌐 CDN" [ref=f1e19] [cursor=pointer]:
+        - generic [ref=f1e20]: 🌐
+        - generic [ref=f1e21]: CDN
+      - button "🚪 API Gateway" [ref=f1e22] [cursor=pointer]:
+        - generic [ref=f1e23]: 🚪
+        - generic [ref=f1e24]: API Gateway
+      - button "⚖️ Load Balancer" [ref=f1e25] [cursor=pointer]:
+        - generic [ref=f1e26]: ⚖️
+        - generic [ref=f1e27]: Load Balancer
+      - button "🖥️ Web Server" [ref=f1e28] [cursor=pointer]:
+        - generic [ref=f1e29]: 🖥️
+        - generic [ref=f1e30]: Web Server
+      - button "⚡ Cache" [ref=f1e31] [cursor=pointer]:
+        - generic [ref=f1e32]: ⚡
+        - generic [ref=f1e33]: Cache
+      - button "🗄️ SQL DB" [ref=f1e34] [cursor=pointer]:
+        - generic [ref=f1e35]: 🗄️
+        - generic [ref=f1e36]: SQL DB
+      - button "🍃 NoSQL DB" [ref=f1e37] [cursor=pointer]:
+        - generic [ref=f1e38]: 🍃
+        - generic [ref=f1e39]: NoSQL DB
+      - button "📬 Message Queue" [ref=f1e40] [cursor=pointer]:
+        - generic [ref=f1e41]: 📬
+        - generic [ref=f1e42]: Message Queue
+      - button "🗂️ Storage" [ref=f1e43] [cursor=pointer]:
+        - generic [ref=f1e44]: 🗂️
+        - generic [ref=f1e45]: Storage
+    - main [ref=f1e46]:
+      - application [ref=f1e48]:
+        - generic "Control Panel" [ref=f1e51]:
+          - button "Zoom In" [disabled]
+          - button "Zoom Out" [ref=f1e52] [cursor=pointer]
+          - button "Fit View" [ref=f1e55] [cursor=pointer]
+          - button "Toggle Interactivity" [ref=f1e58] [cursor=pointer]
+        - img "Mini Map" [ref=f1e62]
+        - link "React Flow attribution" [ref=f1e64] [cursor=pointer]:
+          - /url: https://reactflow.dev/attribution
+          - text: React Flow
+    - complementary [ref=f1e66]:
+      - paragraph [ref=f1e67]: Select a component to configure it.
+    - complementary [ref=f1e68]:
+      - generic [ref=f1e69]: LIVE METRICS
+      - generic [ref=f1e70]:
+        - generic [ref=f1e71]: Ingress QPS
+        - spinbutton [ref=f1e72]: "1000"
+      - generic [ref=f1e75]:
+        - generic [ref=f1e76]:
+          - generic [ref=f1e77]: Total QPS
+          - generic [ref=f1e78]: 1.0K
+        - generic [ref=f1e79]:
+          - generic [ref=f1e80]: System p99
+          - generic [ref=f1e81]: 100ms
+        - generic [ref=f1e82]:
+          - generic [ref=f1e83]: Bottlenecks
+          - generic [ref=f1e84]: "1"
+        - generic [ref=f1e85]:
+          - generic [ref=f1e86]: SPOFs
+          - generic [ref=f1e87]: "0"
+      - generic [ref=f1e88]:
+        - generic [ref=f1e89]:
+          - generic [ref=f1e90]: ClientBOTTLENECK
+          - generic [ref=f1e91]: 1.0K qps
+        - generic [ref=f1e92]:
+          - generic [ref=f1e93]:
+            - text: p50
+            - generic [ref=f1e94]: 100ms
+          - generic [ref=f1e95]:
+            - text: p99
+            - generic [ref=f1e96]: 100ms

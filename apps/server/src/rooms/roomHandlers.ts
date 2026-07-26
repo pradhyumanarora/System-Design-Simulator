@@ -5,7 +5,9 @@ import type { SessionEvent, DesignState } from '@sds/shared/src/index';
 const roomState = new Map<string, DesignState>();
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
+  console.log('[SDS:server] Client connected', { socketId: socket.id });
   socket.on('room:join', (roomId: string) => {
+    console.log('[SDS:server] room:join received', { roomId, socketId: socket.id });
     socket.join(roomId);
     // Send current state to the joining client
     const state = roomState.get(roomId) ?? { components: [], edges: [] };
@@ -20,9 +22,15 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
   socket.on('session:event', (roomId: string, event: SessionEvent) => {
     // Broadcast to everyone else in the room
+    console.log('[SDS:server] session:event received', { roomId, type: event.type, socketId: socket.id });
     socket.to(roomId).emit('session:event', event);
+    console.log('[SDS:server] session:event broadcast to room', { roomId, type: event.type });
     // Apply to in-memory state
     applyEvent(roomId, event);
+  });
+
+  socket.on('disconnect', (reason: string) => {
+    console.log('[SDS:server] Client disconnected', { socketId: socket.id, reason });
   });
 }
 

@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
-import { ReactFlow,
+import { useCallback, useMemo } from 'react';
+import {
+  ReactFlow,
   Background,
   Controls,
-  MiniMap,
   BackgroundVariant,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useDesignStore } from '../../store/useDesignStore';
@@ -13,6 +14,7 @@ import {
   CdnNode, StorageNode, DnsNode,
 } from './nodes';
 
+// Move nodeTypes outside component to prevent recreation on every render
 const nodeTypes = {
   client: ClientNode,
   'api-gateway': ApiGatewayNode,
@@ -42,34 +44,52 @@ export function DesignCanvas() {
     setSelected(null);
   }, [setSelected]);
 
-  // Map ComponentSpec to ReactFlow node shape
-  const nodes = components.map((c) => ({
-    id: c.id,
-    type: c.kind,
-    position: c.position,
-    data: { label: c.label, config: c.config },
-  }));
+  // Memoize nodes to prevent constant recalculation
+  const nodes = useMemo(() => 
+    components.map((c) => ({
+      id: c.id,
+      type: c.kind,
+      position: c.position,
+      data: { label: c.label, config: c.config },
+    })),
+    [components]
+  );
+
+  // Memoize edges to prevent constant recalculation
+  const styledEdges = useMemo(() => 
+    edges.map((e) => ({
+      ...e,
+      style: { stroke: '#f97316', strokeWidth: 3 },
+      animated: true,
+    })),
+    [edges]
+  );
+
+  console.log('[SDS:canvas] nodes:', nodes.length, nodes.map(n => n.type));
+  console.log('[SDS:canvas] edges:', styledEdges.length, styledEdges);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden', position: 'relative' }}>
+      {/* Debug info */}
+      <div style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.7)', color: 'white', padding: '10px', zIndex: 10, fontSize: '12px' }}>
+        <div>Nodes: {nodes.length}</div>
+        <div>Edges: {styledEdges.length}</div>
+      </div>
       <ReactFlow
         nodes={nodes}
-        edges={edges as any}
+        edges={styledEdges as any}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
-        fitView
-        style={{ background: '#0f172a' }}
+        nodesConnectable={true}
+        connectionMode={ConnectionMode.Loose}
+        style={{ background: '#0f172a', flex: 1 }}
       >
         <Background color="#1e293b" variant={BackgroundVariant.Dots} />
         <Controls style={{ background: '#1e293b', border: '1px solid #334155' }} />
-        <MiniMap
-          nodeColor="#6366f1"
-          style={{ background: '#1e293b', border: '1px solid #334155' }}
-        />
       </ReactFlow>
     </div>
   );

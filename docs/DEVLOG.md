@@ -178,3 +178,97 @@ packages/shared/src/
 └── index.ts                         ← ComponentKind, ComponentSpec, EdgeSpec,
                                         DesignState, SessionEvent, ComponentMetrics
 ```
+
+---
+
+## 9. Bug Fixes — 2026-07-26
+
+### Fix 1: Canvas height not resolving (ReactFlow nodes invisible)
+
+**File**: [`apps/web/src/App.tsx`](../apps/web/src/App.tsx) — `<main>` element (line 206)
+
+**Symptom**: ReactFlow rendered an empty canvas; nodes added via the palette were not visible.
+
+**Root cause**: The `<main>` wrapper around `<DesignCanvas>` had no explicit height. ReactFlow's internal container uses `height: 100%` to size itself, but percentage heights require an ancestor with a resolved pixel height. Without `height: '100%'` on `<main>`, the container resolved to 0 px and ReactFlow rendered nothing.
+
+**Fix**: Added `height: '100%'` and `overflow: 'hidden'` to the `<main>` element's inline style:
+
+```tsx
+<main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
+  <DesignCanvas />
+</main>
+```
+
+**Why `overflow: 'hidden'`**: Prevents the ReactFlow viewport from creating scrollbars on the outer layout when nodes are dragged near the edge.
+
+---
+
+### Fix 2: Bottleneck threshold too aggressive (false positives at 80% utilization)
+
+**File**: [`apps/web/src/simulation/simulationWorker.ts`](../apps/web/src/simulation/simulationWorker.ts) — lines 92, 122, 129
+
+**Symptom**: Nodes were flagged as bottlenecks and shown in red even when handling only 80% of their configured capacity — well within normal operating range.
+
+**Root cause**: Both the running-simulation queuing penalty (line 92) and the per-node bottleneck detection (lines 122/129) used `utilization > 0.8` as their threshold. This caused nodes to be visually highlighted as overloaded before they were actually saturated, and the two code paths used inconsistent thresholds.
+
+**Fix**:
+
+| Location | Before | After |
+|---|---|---|
+| Queuing multiplier — simulate() (line 92) | `utilization > 0.8 ? 1 + (utilization - 0.8) * 10` | `utilization >= 1.0 ? 1 + (utilization - 1.0) * 10` |
+| `isBottleneck` flag (line 122) | `utilization > 0.8` | `utilization >= 1.0` |
+| Queuing multiplier — metrics (line 129) | `utilization > 0.8 ? 1 + (utilization - 0.8) * 10` | `utilization >= 1.0 ? 1 + (utilization - 1.0) * 10` |
+
+**Why `>= 1.0`**: A node is only a bottleneck when incoming QPS meets or exceeds its total capacity (`replicas × readThroughput`). At sub-100% utilization the node has headroom. Aligning both code paths to the same threshold eliminates the false-positive highlights and ensures p99 latency inflation in the simulation matches what the metrics panel reports.
+
+---
+
+### Fix 3: React StrictMode causes duplicate nodes from localStorage restore
+
+**File**: [`apps/web/src/App.tsx`](../apps/web/src/App.tsx) — localStorage restore `useEffect`
+
+**Symptom**: After a page reload, each saved node appeared twice in the Zustand store (same ID, overlapping on the canvas). The metrics panel showed duplicate component rows.
+
+**Root cause**: React 18 StrictMode intentionally double-invokes effects in development. The restore `useEffect` had no guard against re-execution, so `addComponent` was called twice for every saved node.
+
+**Fix**: Added a `hasRestoredRef` (`useRef(false)`) that is set to `true` on the first invocation. The second StrictMode invocation sees `hasRestoredRef.current === true` and returns early.
+
+```tsx
+const hasRestoredRef = useRef(false);
+useEffect(() => {
+  if (hasRestoredRef.current) return;
+  hasRestoredRef.current = true;
+  const saved = loadDesign();
+  if (saved && saved.components.length > 0) {
+    clearCanvas();
+    for (const c of saved.components) addComponent(c, true);
+  }
+}, []);
+```
+
+---
+
+### Fix 4: React StrictMode causes `room:join` to fire twice
+
+**File**: [`apps/web/src/App.tsx`](../apps/web/src/App.tsx) — room join `useEffect`
+
+**Symptom**: Server logs showed `room:join received` twice per page load from the same socket ID. The server sent two `room:state` events back, causing double state hydration in the store.
+
+**Root cause**: The original guard used a local `let joined = false` variable inside the effect. StrictMode tears down and re-mounts the effect, creating a new closure with `joined = false`, so the second invocation bypassed the guard.
+
+**Fix**: Replaced the local variable with a `hasJoinedRef` (`useRef(false)`) that persists across StrictMode re-mounts:
+
+```tsx
+const hasJoinedRef = useRef(false);
+useEffect(() => {
+  if (hasJoinedRef.current) return;
+  function doJoin() {
+    if (hasJoinedRef.current) return;
+    hasJoinedRef.current = true;
+    socket.emit('room:join', 'default-room');
+  }
+  if (socket.connected) doJoin();
+  else socket.once('connect', doJoin);
+  return () => { socket.off('connect', doJoin); };
+}, []);
+```

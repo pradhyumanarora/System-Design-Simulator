@@ -5,12 +5,16 @@ import cors from 'cors';
 import { registerRoomHandlers } from './rooms/roomHandlers';
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:3000'] }));
 app.use(express.json());
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: '*' },
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
 io.on('connection', (socket) => {

@@ -1,21 +1,72 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DesignCanvas } from './components/canvas/DesignCanvas';
 import { ComponentPalette } from './components/sidebar/ComponentPalette';
 import { ConfigPanel } from './components/config/ConfigPanel';
+import { MetricsPanel } from './components/metrics/MetricsPanel';
+import { ScorePanel } from './components/scoring/ScorePanel';
 import { useDesignStore } from './store/useDesignStore';
+import { useSimulation } from './simulation/useSimulation';
+import { scoreDesign } from './scoring/scorer';
+import { saveDesign, loadDesign, exportAsPng } from './persistence/storage';
+import { SEED_PROBLEMS } from './problems/seedProblems';
 import type { ComponentKind } from '@sds/shared/src/index';
+import type { ScoreResult } from './scoring/scorer';
+import { socket } from './socket';
 import './index.css';
 
-let idCounter = 0;
-const nextId = () => `comp-${++idCounter}`;
-
 export default function App() {
-  const { addComponent, clearCanvas } = useDesignStore();
+  const { addComponent, clearCanvas, components, edges } = useDesignStore();
+  const [ingressQps, setIngressQps] = useState(1_000);
+  const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
+  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
+  const [showProblems, setShowProblems] = useState(false);
+
+  const metrics = useSimulation(ingressQps);
+
+  // Use a module-level ref so StrictMode double-invoke doesn't emit room:join twice.
+  const hasJoinedRef = useRef(false);
+  useEffect(() => {
+    if (hasJoinedRef.current) return;
+    function doJoin() {
+      if (hasJoinedRef.current) return;
+      hasJoinedRef.current = true;
+      socket.emit('room:join', 'default-room');
+    }
+    if (socket.connected) {
+      doJoin();
+    } else {
+      socket.once('connect', doJoin);
+    }
+    return () => {
+      socket.off('connect', doJoin);
+    };
+  }, []);
+
+  // Auto-save on every change
+  useEffect(() => {
+    if (components.length > 0 || edges.length > 0) {
+      saveDesign({ components, edges });
+    }
+  }, [components, edges]);
+
+  // Restore from localStorage on first load — guard against StrictMode double-invoke
+  // by checking whether a component with the same id already exists before adding.
+  const hasRestoredRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+    const saved = loadDesign();
+    if (saved && saved.components.length > 0) {
+      clearCanvas();
+      for (const c of saved.components) addComponent(c, true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAdd = useCallback(
     (kind: ComponentKind) => {
       addComponent({
-        id: nextId(),
+        id: crypto.randomUUID(),
         kind,
         label: kind.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
         position: {
@@ -27,6 +78,28 @@ export default function App() {
     },
     [addComponent]
   );
+
+  const handleLoadProblem = useCallback(
+    (id: string) => {
+      const problem = SEED_PROBLEMS.find((p) => p.id === id);
+      if (!problem) return;
+      clearCanvas();
+      for (const c of problem.components) addComponent(c, true);
+      setIngressQps(problem.targetQps);
+      setActiveProblemId(id);
+      setShowProblems(false);
+    },
+    [clearCanvas, addComponent]
+  );
+
+  const handleScore = useCallback(() => {
+    const problem = SEED_PROBLEMS.find((p) => p.id === activeProblemId);
+    const targetQps = problem?.targetQps ?? ingressQps;
+    const result = scoreDesign(components, edges, metrics, targetQps);
+    setScoreResult(result);
+  }, [components, edges, metrics, activeProblemId, ingressQps]);
+
+  const activeProblem = SEED_PROBLEMS.find((p) => p.id === activeProblemId);
 
   return (
     <div
@@ -47,36 +120,130 @@ export default function App() {
           display: 'flex',
           alignItems: 'center',
           padding: '0 20px',
-          gap: 16,
+          gap: 10,
           flexShrink: 0,
         }}
       >
         <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.5px' }}>
           ⚙️ System Design Simulator
         </span>
+
+        {activeProblem && (
+          <span
+            style={{
+              fontSize: 12,
+              color: '#94a3b8',
+              background: '#0f172a',
+              borderRadius: 6,
+              padding: '2px 10px',
+            }}
+          >
+            {activeProblem.title}
+          </span>
+        )}
+
         <div style={{ flex: 1 }} />
-        <button
-          onClick={clearCanvas}
-          style={{
-            background: '#334155',
-            border: 'none',
-            borderRadius: 6,
-            color: '#e2e8f0',
-            padding: '4px 12px',
-            cursor: 'pointer',
-            fontSize: 13,
+
+        <HeaderBtn onClick={() => setShowProblems((v) => !v)}>📋 Problems</HeaderBtn>
+        <HeaderBtn onClick={handleScore}>🏆 Score</HeaderBtn>
+        <HeaderBtn onClick={() => exportAsPng()}>💾 Export PNG</HeaderBtn>
+        <HeaderBtn
+          onClick={() => {
+            clearCanvas();
+            setActiveProblemId(null);
           }}
         >
-          Clear
-        </button>
+          🗑 Clear
+        </HeaderBtn>
       </header>
+
+      {/* Problems dropdown */}
+      {showProblems && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 48,
+            right: 200,
+            background: '#1e293b',
+            border: '1px solid #334155',
+            borderRadius: 10,
+            padding: 12,
+            zIndex: 500,
+            minWidth: 320,
+            boxShadow: '0 8px 32px #0008',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>
+            SEED PROBLEMS
+          </div>
+          {SEED_PROBLEMS.map((prob) => (
+            <button
+              key={prob.id}
+              onClick={() => handleLoadProblem(prob.id)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                background: prob.id === activeProblemId ? '#334155' : 'transparent',
+                border: 'none',
+                borderRadius: 8,
+                color: '#e2e8f0',
+                padding: '8px 10px',
+                cursor: 'pointer',
+                marginBottom: 4,
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{prob.title}</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>
+                Target: {(prob.targetQps / 1000).toFixed(0)}K QPS — {prob.description.slice(0, 60)}…
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <ComponentPalette onAdd={handleAdd} />
-        <main style={{ flex: 1, position: 'relative' }}>
+        <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
           <DesignCanvas />
         </main>
         <ConfigPanel />
+        <MetricsPanel
+          metrics={metrics}
+          ingressQps={ingressQps}
+          onIngressChange={setIngressQps}
+        />
       </div>
+
+      {scoreResult && (
+        <ScorePanel result={scoreResult} onClose={() => setScoreResult(null)} />
+      )}
     </div>
+  );
+}
+
+function HeaderBtn({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: '#334155',
+        border: 'none',
+        borderRadius: 6,
+        color: '#e2e8f0',
+        padding: '4px 10px',
+        cursor: 'pointer',
+        fontSize: 12,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
   );
 }

@@ -1,34 +1,34 @@
 # System Design Simulator — Roadmap
 
-**Audience**: Interview prep (FAANG) + distributed systems learning  
-**Differentiator**: Real-time collaborative design + structured interview mode  
-**Stack**: React + TypeScript + Vite (frontend), Node.js + Express + Socket.io (backend), ReactFlow (canvas)  
+**Audience**: Interview prep (FAANG) + distributed systems learning
+**Differentiator**: Real-time collaborative design + structured interview mode
+**Stack**: React + TypeScript + Vite (frontend), Node.js + Express + Socket.io (backend), ReactFlow (canvas)
 **MVP target**: 2–4 weeks
 
 ---
 
-## Phase 0 — Foundation (Week 1–2)
+## Phase 0 — Foundation ✅ Complete
 
 Goal: Runnable skeleton with canvas + real-time infra
 
-1. **Project scaffold** — React + TypeScript (Vite), Node.js + Express backend, monorepo (`apps/web`, `apps/server`)
-2. **WebSocket layer** — Socket.io with room-based session management
-3. **Canvas** — ReactFlow with drag, drop, connect nodes
-4. **10 core components** — Client, API Gateway, Load Balancer, Web Server, Database (SQL/NoSQL), Cache (Redis), Message Queue, CDN, Storage (S3-style), DNS
-5. **State management** — Zustand on frontend, in-memory session store on backend
-6. **Component config panel** — click to configure replicas, read/write throughput, latency SLA
+1. ✅ **Project scaffold** — React + TypeScript (Vite), Node.js + Express backend, monorepo (`apps/web`, `apps/server`)
+2. ✅ **WebSocket layer** — Socket.io with room-based session management
+3. ✅ **Canvas** — ReactFlow with drag, drop, connect nodes
+4. ✅ **11 core components** — Client, API Gateway, Load Balancer, Web Server, SQL DB, NoSQL DB, Cache, Message Queue, CDN, Storage, DNS
+5. ✅ **State management** — Zustand on frontend, in-memory session store on backend
+6. ✅ **Component config panel** — click to configure replicas, read/write throughput, latency SLA
 
 ---
 
-## Phase 1 — MVP (Week 2–4)
+## Phase 1 — MVP ✅ Complete
 
 Goal: Solo simulation works end-to-end
 
-7. **Traffic simulation engine** — Web Worker, topological sort → animated request flow → per-hop latency accumulation
-8. **Live metrics sidebar** — QPS, p50/p99 latency, throughput bottleneck detection, single-point-of-failure highlighting
-9. **5 seed design problems** — URL Shortener, Twitter Feed, Rate Limiter, File Upload System, Notification Service
-10. **Design persistence** — save/load JSON to localStorage; export as PNG
-11. **Basic scoring** — completeness check: does design handle stated QPS? redundancy? failure paths?
+7. ✅ **Traffic simulation engine** — Web Worker, topological sort (Kahn's algorithm) → per-hop QPS propagation → critical-path latency accumulation
+8. ✅ **Live metrics sidebar** — QPS, p50/p99 latency, bottleneck detection (≥100% utilization), single-point-of-failure highlighting
+9. ✅ **5 seed design problems** — URL Shortener, Twitter Feed, Rate Limiter, File Upload System, Notification Service (loaded via "📋 Problems" menu)
+10. ✅ **Design persistence** — auto-save/load JSON to localStorage; export as PNG
+11. ✅ **Basic scoring** — completeness check: handles stated QPS? redundancy (replicas > 1)? no bottlenecks? no SPOFs?
 
 ---
 

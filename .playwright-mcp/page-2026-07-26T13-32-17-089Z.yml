@@ -1,0 +1,141 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]: ⚙️ System Design Simulator
+    - button "📋 Problems" [ref=e6] [cursor=pointer]
+    - button "🏆 Score" [ref=e7] [cursor=pointer]
+    - button "💾 Export PNG" [ref=e8] [cursor=pointer]
+    - button "🗑 Clear" [ref=e9] [cursor=pointer]
+  - generic [ref=e10]:
+    - complementary [ref=e11]:
+      - generic [ref=e12]: COMPONENTS
+      - button "💻 Client" [active] [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: 💻
+        - generic [ref=e15]: Client
+      - button "🔡 DNS" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 🔡
+        - generic [ref=e18]: DNS
+      - button "🌐 CDN" [ref=e19] [cursor=pointer]:
+        - generic [ref=e20]: 🌐
+        - generic [ref=e21]: CDN
+      - button "🚪 API Gateway" [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: 🚪
+        - generic [ref=e24]: API Gateway
+      - button "⚖️ Load Balancer" [ref=e25] [cursor=pointer]:
+        - generic [ref=e26]: ⚖️
+        - generic [ref=e27]: Load Balancer
+      - button "🖥️ Web Server" [ref=e28] [cursor=pointer]:
+        - generic [ref=e29]: 🖥️
+        - generic [ref=e30]: Web Server
+      - button "⚡ Cache" [ref=e31] [cursor=pointer]:
+        - generic [ref=e32]: ⚡
+        - generic [ref=e33]: Cache
+      - button "🗄️ SQL DB" [ref=e34] [cursor=pointer]:
+        - generic [ref=e35]: 🗄️
+        - generic [ref=e36]: SQL DB
+      - button "🍃 NoSQL DB" [ref=e37] [cursor=pointer]:
+        - generic [ref=e38]: 🍃
+        - generic [ref=e39]: NoSQL DB
+      - button "📬 Message Queue" [ref=e40] [cursor=pointer]:
+        - generic [ref=e41]: 📬
+        - generic [ref=e42]: Message Queue
+      - button "🗂️ Storage" [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 🗂️
+        - generic [ref=e45]: Storage
+    - main [ref=e46]:
+      - application [ref=e48]:
+        - generic "Control Panel" [ref=e51]:
+          - button "Zoom In" [disabled]
+          - button "Zoom Out" [ref=e52] [cursor=pointer]
+          - button "Fit View" [ref=e55] [cursor=pointer]
+          - button "Toggle Interactivity" [ref=e58] [cursor=pointer]
+        - img "Mini Map" [ref=e62]
+        - link "React Flow attribution" [ref=e64] [cursor=pointer]:
+          - /url: https://reactflow.dev/attribution
+          - text: React Flow
+    - complementary [ref=e66]:
+      - paragraph [ref=e67]: Select a component to configure it.
+    - complementary [ref=e68]:
+      - generic [ref=e69]: LIVE METRICS
+      - generic [ref=e70]:
+        - generic [ref=e71]: Ingress QPS
+        - spinbutton [ref=e72]: "1000"
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: Total QPS
+          - generic [ref=e78]: 1.0K
+        - generic [ref=e79]:
+          - generic [ref=e80]: System p99
+          - generic [ref=e81]: 100ms
+        - generic [ref=e82]:
+          - generic [ref=e83]: Bottlenecks
+          - generic [ref=e84]: "6"
+        - generic [ref=e85]:
+          - generic [ref=e86]: SPOFs
+          - generic [ref=e87]: "0"
+      - generic [ref=e73]:
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - generic [ref=e90]: ClientBOTTLENECK
+            - generic [ref=e91]: 1.0K qps
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - text: p50
+              - generic [ref=e94]: 100ms
+            - generic [ref=e95]:
+              - text: p99
+              - generic [ref=e96]: 100ms
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - generic [ref=e99]: ClientBOTTLENECK
+            - generic [ref=e100]: 1.0K qps
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - text: p50
+              - generic [ref=e103]: 100ms
+            - generic [ref=e104]:
+              - text: p99
+              - generic [ref=e105]: 100ms
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]: DnsBOTTLENECK
+            - generic [ref=e109]: 1.0K qps
+          - generic [ref=e110]:
+            - generic [ref=e111]:
+              - text: p50
+              - generic [ref=e112]: 100ms
+            - generic [ref=e113]:
+              - text: p99
+              - generic [ref=e114]: 100ms
+        - generic [ref=e115]:
+          - generic [ref=e116]:
+            - generic [ref=e117]: CdnBOTTLENECK
+            - generic [ref=e118]: 1.0K qps
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - text: p50
+              - generic [ref=e121]: 100ms
+            - generic [ref=e122]:
+              - text: p99
+              - generic [ref=e123]: 100ms
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - generic [ref=e126]: Load BalancerBOTTLENECK
+            - generic [ref=e127]: 1.0K qps
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - text: p50
+              - generic [ref=e130]: 100ms
+            - generic [ref=e131]:
+              - text: p99
+              - generic [ref=e132]: 100ms
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - generic [ref=e135]: ClientBOTTLENECK
+            - generic [ref=e136]: 1.0K qps
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - text: p50
+              - generic [ref=e139]: 100ms
+            - generic [ref=e140]:
+              - text: p99
+              - generic [ref=e141]: 100ms
