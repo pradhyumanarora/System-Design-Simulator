@@ -1,9 +1,13 @@
 import { io } from 'socket.io-client';
 
-// Force WebSocket-only transport to avoid CORS preflight errors on the HTTP
-// long-polling fallback. WebSocket upgrade bypasses CORS entirely.
-export const socket = io('http://localhost:3001', {
-  autoConnect: true,
+const serverUrl = import.meta.env.VITE_SERVER_URL || (
+  import.meta.env.DEV ? 'http://localhost:3001' : undefined
+);
+
+// Static deployments work without collaboration. Set VITE_SERVER_URL in a
+// production build to connect the UI to a separately hosted Socket.IO server.
+export const socket = io(serverUrl ?? window.location.origin, {
+  autoConnect: Boolean(serverUrl),
   transports: ['websocket'],
 });
 

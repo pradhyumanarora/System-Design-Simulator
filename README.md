@@ -12,10 +12,29 @@ An interactive canvas for practising system design interviews — drag component
 | **Traffic simulation** — Web Worker, topological sort, per-hop QPS + critical-path latency | ✅ |
 | **Live metrics panel** — system QPS, p50/p99 latency, bottleneck & SPOF detection | ✅ |
 | **5 seed problems** — URL Shortener, Twitter Feed, Rate Limiter, File Upload, Notification Service | ✅ |
+| **Design Notes workspace** — requirements, NFRs, API design, data model and trade-offs | ✅ |
 | **Design scoring** — QPS coverage, redundancy, bottleneck-free, SPOF-free checks | ✅ |
 | **localStorage persistence** — auto-save/restore on every change | ✅ |
 | **Export as PNG** | ✅ |
 | **Real-time collaboration** — Socket.IO room sync (component add/update/remove, edge add) | ✅ (basic) |
+
+## GitHub Pages
+
+The frontend is deployed by `.github/workflows/deploy-pages.yml` whenever
+`master` is updated:
+
+<https://pradhyumanarora.github.io/System-Design-Simulator/>
+
+GitHub Pages hosts only the static UI. The canvas, simulation, scoring, Design
+Notes and local persistence work without the server. Real-time collaboration is
+disabled in this mode.
+
+To enable collaboration in another production environment, deploy
+`apps/server` separately and build the frontend with:
+
+```bash
+VITE_SERVER_URL=https://your-server.example.com npm run build --workspace=apps/web
+```
 
 ## Prerequisites
 
