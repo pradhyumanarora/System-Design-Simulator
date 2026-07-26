@@ -6,23 +6,36 @@ import { ConfigPanel } from './components/config/ConfigPanel';
 import { MetricsPanel } from './components/metrics/MetricsPanel';
 import { ScorePanel } from './components/scoring/ScorePanel';
 import { DesignNotesPanel } from './components/notes/DesignNotesPanel';
+import { DataModelCanvas } from './components/data-model/DataModelCanvas';
+import { DataModelPalette } from './components/data-model/DataModelPalette';
+import { EntityConfigPanel } from './components/data-model/EntityConfigPanel';
 import { useDesignStore } from './store/useDesignStore';
 import { useSimulation } from './simulation/useSimulation';
 import { scoreDesign } from './scoring/scorer';
 import { saveDesign, loadDesign, clearDesign, exportAsPng } from './persistence/storage';
 import { SEED_PROBLEMS } from './problems/seedProblems';
-import type { ComponentKind } from '@sds/shared/src/index';
+import type { ComponentKind, DataModelEntity } from '@sds/shared/src/index';
 import type { ScoreResult } from './scoring/scorer';
 import { socket } from './socket';
 import './index.css';
 
 export default function App() {
-  const { addComponent, clearCanvas, setDesign, components, edges, notes } = useDesignStore();
+  const {
+    addComponent,
+    addEntity,
+    clearCanvas,
+    setDesign,
+    components,
+    edges,
+    notes,
+    schema,
+  } = useDesignStore();
   const [ingressQps, setIngressQps] = useState(1_000);
   const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [showProblems, setShowProblems] = useState(false);
   const [showDesignNotes, setShowDesignNotes] = useState(false);
+  const [workspace, setWorkspace] = useState<'architecture' | 'data-model'>('architecture');
 
   const metrics = useSimulation(ingressQps);
 
@@ -54,11 +67,13 @@ export default function App() {
       notes.apiEndpoints.length > 0 ||
       Object.values(notes.nonFunctionalRequirements).some(Boolean) ||
       notes.dataModel ||
-      notes.tradeOffs
+      notes.tradeOffs ||
+      schema.entities.length > 0 ||
+      schema.relations.length > 0
     ) {
-      saveDesign({ components, edges, notes });
+      saveDesign({ components, edges, notes, schema });
     }
-  }, [components, edges, notes]);
+  }, [components, edges, notes, schema]);
 
   // Restore from localStorage on first load — guard against StrictMode double-invoke
   // by checking whether a component with the same id already exists before adding.
@@ -108,6 +123,27 @@ export default function App() {
     setScoreResult(result);
   }, [components, edges, metrics, activeProblemId, ingressQps]);
 
+  const handleAddEntity = useCallback(() => {
+    const entity: DataModelEntity = {
+      id: crypto.randomUUID(),
+      name: `Entity ${schema.entities.length + 1}`,
+      position: {
+        x: 260 + (schema.entities.length % 3) * 280,
+        y: 120 + Math.floor(schema.entities.length / 3) * 220,
+      },
+      fields: [
+        {
+          id: crypto.randomUUID(),
+          name: 'id',
+          dataType: 'uuid',
+          isPrimaryKey: true,
+          isNullable: false,
+        },
+      ],
+    };
+    addEntity(entity);
+  }, [addEntity, schema.entities.length]);
+
   const activeProblem = SEED_PROBLEMS.find((p) => p.id === activeProblemId);
 
   return (
@@ -136,6 +172,7 @@ export default function App() {
         <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.5px' }}>
           ⚙️ System Design Simulator
         </span>
+        <WorkspaceTabs workspace={workspace} onChange={setWorkspace} />
 
         {activeProblem && (
           <span
@@ -214,18 +251,28 @@ export default function App() {
       )}
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        <ComponentPalette onAdd={handleAdd} />
-        <ReactFlowProvider>
+        {workspace === 'architecture' ? (
+          <ComponentPalette onAdd={handleAdd} />
+        ) : (
+          <DataModelPalette onAdd={handleAddEntity} />
+        )}
+        <ReactFlowProvider key={workspace}>
           <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
-            <DesignCanvas />
+            {workspace === 'architecture' ? <DesignCanvas /> : <DataModelCanvas />}
           </main>
         </ReactFlowProvider>
-        <ConfigPanel />
-        <MetricsPanel
-          metrics={metrics}
-          ingressQps={ingressQps}
-          onIngressChange={setIngressQps}
-        />
+        {workspace === 'architecture' ? (
+          <>
+            <ConfigPanel />
+            <MetricsPanel
+              metrics={metrics}
+              ingressQps={ingressQps}
+              onIngressChange={setIngressQps}
+            />
+          </>
+        ) : (
+          <EntityConfigPanel />
+        )}
       </div>
 
       {scoreResult && (
@@ -234,6 +281,40 @@ export default function App() {
       {showDesignNotes && (
         <DesignNotesPanel onClose={() => setShowDesignNotes(false)} />
       )}
+    </div>
+  );
+}
+
+function WorkspaceTabs({
+  workspace,
+  onChange,
+}: {
+  workspace: 'architecture' | 'data-model';
+  onChange: (workspace: 'architecture' | 'data-model') => void;
+}) {
+  return (
+    <div style={{ background: '#0f172a', borderRadius: 7, display: 'flex', padding: 2 }}>
+      {([
+        ['architecture', 'Architecture'],
+        ['data-model', 'Data Model'],
+      ] as const).map(([value, label]) => (
+        <button
+          key={value}
+          onClick={() => onChange(value)}
+          style={{
+            background: workspace === value ? '#475569' : 'transparent',
+            border: 'none',
+            borderRadius: 5,
+            color: workspace === value ? '#f8fafc' : '#94a3b8',
+            cursor: 'pointer',
+            fontSize: 11,
+            fontWeight: 700,
+            padding: '5px 9px',
+          }}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

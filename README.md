@@ -13,6 +13,7 @@ An interactive canvas for practising system design interviews — drag component
 | **Live metrics panel** — system QPS, p50/p99 latency, bottleneck & SPOF detection | ✅ |
 | **5 seed problems** — URL Shortener, Twitter Feed, Rate Limiter, File Upload, Notification Service | ✅ |
 | **Design Notes workspace** — requirements, NFRs, API design, data model and trade-offs | ✅ |
+| **Data Model canvas** — entities, fields, keys and relationship cardinalities | ✅ |
 | **Design scoring** — QPS coverage, redundancy, bottleneck-free, SPOF-free checks | ✅ |
 | **localStorage persistence** — auto-save/restore on every change | ✅ |
 | **Export as PNG** | ✅ |
@@ -103,6 +104,7 @@ System-Design-Simulator/
 │   │       ├── components/
 │   │       │   ├── canvas/         # ReactFlow wrapper + 11 custom node types
 │   │       │   ├── config/         # ConfigPanel (edit selected node)
+│   │       │   ├── data-model/     # Entity diagram canvas and schema editor
 │   │       │   ├── metrics/        # MetricsPanel (live simulation output)
 │   │       │   ├── scoring/        # ScorePanel (modal score result)
 │   │       │   └── sidebar/        # ComponentPalette (click to add nodes)

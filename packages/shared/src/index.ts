@@ -70,10 +70,51 @@ export interface DesignNotes {
   tradeOffs: string;
 }
 
+export type DataFieldType =
+  | 'uuid'
+  | 'string'
+  | 'text'
+  | 'integer'
+  | 'decimal'
+  | 'boolean'
+  | 'timestamp'
+  | 'json';
+
+export interface DataModelField {
+  id: string;
+  name: string;
+  dataType: DataFieldType;
+  isPrimaryKey: boolean;
+  isNullable: boolean;
+}
+
+export interface DataModelEntity {
+  id: string;
+  name: string;
+  position: { x: number; y: number };
+  fields: DataModelField[];
+}
+
+export type RelationCardinality = 'one-to-one' | 'one-to-many' | 'many-to-many';
+
+export interface DataModelRelation {
+  id: string;
+  source: string;
+  target: string;
+  cardinality: RelationCardinality;
+  selected?: boolean;
+}
+
+export interface DataModelDiagram {
+  entities: DataModelEntity[];
+  relations: DataModelRelation[];
+}
+
 export interface DesignState {
   components: ComponentSpec[];
   edges: EdgeSpec[];
   notes?: DesignNotes;
+  schema?: DataModelDiagram;
 }
 
 // ─── Session / room events (Socket.io) ───────────────────────────────────────

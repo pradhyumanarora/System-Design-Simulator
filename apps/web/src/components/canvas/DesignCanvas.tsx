@@ -112,6 +112,7 @@ export function DesignCanvas() {
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
         onPaneClick={handlePaneClick}
+        deleteKeyCode={['Backspace', 'Delete']}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         style={{ background: '#0f172a', flex: 1 }}
