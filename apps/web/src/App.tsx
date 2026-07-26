@@ -9,6 +9,8 @@ import { DesignNotesPanel } from './components/notes/DesignNotesPanel';
 import { DataModelCanvas } from './components/data-model/DataModelCanvas';
 import { DataModelPalette } from './components/data-model/DataModelPalette';
 import { EntityConfigPanel } from './components/data-model/EntityConfigPanel';
+import { CapacityGuide } from './components/capacity/CapacityGuide';
+import { CapacityWorkspace } from './components/capacity/CapacityWorkspace';
 import { useDesignStore } from './store/useDesignStore';
 import { useSimulation } from './simulation/useSimulation';
 import { scoreDesign } from './scoring/scorer';
@@ -17,7 +19,10 @@ import { SEED_PROBLEMS } from './problems/seedProblems';
 import type { ComponentKind, DataModelEntity } from '@sds/shared/src/index';
 import type { ScoreResult } from './scoring/scorer';
 import { socket } from './socket';
+import { isDefaultCapacity } from './capacity';
 import './index.css';
+
+type Workspace = 'architecture' | 'data-model' | 'capacity';
 
 export default function App() {
   const {
@@ -29,13 +34,14 @@ export default function App() {
     edges,
     notes,
     schema,
+    capacity,
   } = useDesignStore();
   const [ingressQps, setIngressQps] = useState(1_000);
   const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const [showProblems, setShowProblems] = useState(false);
   const [showDesignNotes, setShowDesignNotes] = useState(false);
-  const [workspace, setWorkspace] = useState<'architecture' | 'data-model'>('architecture');
+  const [workspace, setWorkspace] = useState<Workspace>('architecture');
 
   const metrics = useSimulation(ingressQps);
 
@@ -69,11 +75,12 @@ export default function App() {
       notes.dataModel ||
       notes.tradeOffs ||
       schema.entities.length > 0 ||
-      schema.relations.length > 0
+      schema.relations.length > 0 ||
+      !isDefaultCapacity(capacity)
     ) {
-      saveDesign({ components, edges, notes, schema });
+      saveDesign({ components, edges, notes, schema, capacity });
     }
-  }, [components, edges, notes, schema]);
+  }, [capacity, components, edges, notes, schema]);
 
   // Restore from localStorage on first load — guard against StrictMode double-invoke
   // by checking whether a component with the same id already exists before adding.
@@ -253,14 +260,22 @@ export default function App() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {workspace === 'architecture' ? (
           <ComponentPalette onAdd={handleAdd} />
-        ) : (
+        ) : workspace === 'data-model' ? (
           <DataModelPalette onAdd={handleAddEntity} />
+        ) : (
+          <CapacityGuide />
         )}
-        <ReactFlowProvider key={workspace}>
-          <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
-            {workspace === 'architecture' ? <DesignCanvas /> : <DataModelCanvas />}
+        {workspace === 'capacity' ? (
+          <main style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <CapacityWorkspace />
           </main>
-        </ReactFlowProvider>
+        ) : (
+          <ReactFlowProvider key={workspace}>
+            <main style={{ flex: 1, position: 'relative', height: '100%', overflow: 'hidden' }}>
+              {workspace === 'architecture' ? <DesignCanvas /> : <DataModelCanvas />}
+            </main>
+          </ReactFlowProvider>
+        )}
         {workspace === 'architecture' ? (
           <>
             <ConfigPanel />
@@ -270,9 +285,9 @@ export default function App() {
               onIngressChange={setIngressQps}
             />
           </>
-        ) : (
+        ) : workspace === 'data-model' ? (
           <EntityConfigPanel />
-        )}
+        ) : null}
       </div>
 
       {scoreResult && (
@@ -289,14 +304,15 @@ function WorkspaceTabs({
   workspace,
   onChange,
 }: {
-  workspace: 'architecture' | 'data-model';
-  onChange: (workspace: 'architecture' | 'data-model') => void;
+  workspace: Workspace;
+  onChange: (workspace: Workspace) => void;
 }) {
   return (
     <div style={{ background: '#0f172a', borderRadius: 7, display: 'flex', padding: 2 }}>
       {([
         ['architecture', 'Architecture'],
         ['data-model', 'Data Model'],
+        ['capacity', 'Capacity'],
       ] as const).map(([value, label]) => (
         <button
           key={value}

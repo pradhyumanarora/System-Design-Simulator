@@ -110,11 +110,24 @@ export interface DataModelDiagram {
   relations: DataModelRelation[];
 }
 
+export interface CapacityInputs {
+  dailyActiveUsers: number;
+  actionsPerUserPerDay: number;
+  readPercentage: number;
+  peakTrafficMultiplier: number;
+  requestSizeBytes: number;
+  responseSizeBytes: number;
+  storedRecordSizeBytes: number;
+  retentionDays: number;
+  replicationFactor: number;
+}
+
 export interface DesignState {
   components: ComponentSpec[];
   edges: EdgeSpec[];
   notes?: DesignNotes;
   schema?: DataModelDiagram;
+  capacity?: CapacityInputs;
 }
 
 // ─── Session / room events (Socket.io) ───────────────────────────────────────

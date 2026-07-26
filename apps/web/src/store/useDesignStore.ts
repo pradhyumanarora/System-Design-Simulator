@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   ComponentSpec,
+  CapacityInputs,
   DataModelDiagram,
   DataModelEntity,
   DataModelRelation,
@@ -15,6 +16,7 @@ import { socket } from '../socket';
 import { getHandleIds } from '../components/canvas/handleIdMap';
 import type { SystemNode } from '../components/canvas/nodes';
 import { createEmptyDesignNotes, normalizeDesignNotes } from '../designNotes';
+import { DEFAULT_CAPACITY_INPUTS, normalizeCapacity } from '../capacity';
 
 const ROOM_ID = 'default-room';
 const EMPTY_SCHEMA: DataModelDiagram = { entities: [], relations: [] };
@@ -31,11 +33,12 @@ function emitEvent(type: SessionEvent['type'], payload: unknown) {
   socket.emit('session:event', ROOM_ID, event);
 }
 
-function normalizeDesign({ components, edges, notes, schema }: DesignState): {
+function normalizeDesign({ components, edges, notes, schema, capacity }: DesignState): {
   components: ComponentSpec[];
   edges: EdgeSpec[];
   notes: DesignNotes;
   schema: DataModelDiagram;
+  capacity: CapacityInputs;
 } {
   const componentsById = new Map(components.map((component) => [component.id, component]));
   return {
@@ -52,6 +55,7 @@ function normalizeDesign({ components, edges, notes, schema }: DesignState): {
     }),
     notes: normalizeDesignNotes(notes),
     schema: schema ?? EMPTY_SCHEMA,
+    capacity: normalizeCapacity(capacity),
   };
 }
 
@@ -60,6 +64,7 @@ interface DesignStore {
   edges: EdgeSpec[];
   notes: DesignNotes;
   schema: DataModelDiagram;
+  capacity: CapacityInputs;
   selectedId: string | null;
   selectedEntityId: string | null;
 
@@ -73,6 +78,7 @@ interface DesignStore {
 
   setSelected: (id: string | null) => void;
   setNotes: (notes: DesignNotes) => void;
+  setCapacity: (capacity: CapacityInputs) => void;
   addEntity: (entity: DataModelEntity) => void;
   updateEntity: (id: string, patch: Partial<DataModelEntity>) => void;
   removeEntity: (id: string) => void;
@@ -122,6 +128,7 @@ export const useDesignStore = create<DesignStore>((set, get) => {
       ...normalized,
       notes: state.notes ? normalized.notes : current.notes,
       schema: state.schema ? normalized.schema : current.schema,
+      capacity: state.capacity ? normalized.capacity : current.capacity,
       selectedId: null,
       selectedEntityId: null,
     }));
@@ -132,6 +139,7 @@ export const useDesignStore = create<DesignStore>((set, get) => {
     edges: [],
     notes: createEmptyDesignNotes(),
     schema: EMPTY_SCHEMA,
+    capacity: { ...DEFAULT_CAPACITY_INPUTS },
     selectedId: null,
     selectedEntityId: null,
 
@@ -255,6 +263,8 @@ export const useDesignStore = create<DesignStore>((set, get) => {
     setSelected: (id) => set({ selectedId: id }),
 
     setNotes: (notes) => set({ notes }),
+
+    setCapacity: (capacity) => set({ capacity }),
 
     addEntity: (entity) => set((state) => ({
       schema: {
@@ -384,6 +394,7 @@ export const useDesignStore = create<DesignStore>((set, get) => {
       edges: [],
       notes: createEmptyDesignNotes(),
       schema: EMPTY_SCHEMA,
+      capacity: { ...DEFAULT_CAPACITY_INPUTS },
       selectedId: null,
       selectedEntityId: null,
     }),

@@ -14,10 +14,17 @@ An interactive canvas for practising system design interviews — drag component
 | **5 seed problems** — URL Shortener, Twitter Feed, Rate Limiter, File Upload, Notification Service | ✅ |
 | **Design Notes workspace** — requirements, NFRs, API design, data model and trade-offs | ✅ |
 | **Data Model canvas** — entities, fields, keys and relationship cardinalities | ✅ |
+| **Capacity Planning workspace** — traffic, bandwidth and storage estimates with architecture capacity checks | ✅ |
 | **Design scoring** — QPS coverage, redundancy, bottleneck-free, SPOF-free checks | ✅ |
 | **localStorage persistence** — auto-save/restore on every change | ✅ |
 | **Export as PNG** | ✅ |
 | **Real-time collaboration** — Socket.IO room sync (component add/update/remove, edge add) | ✅ (basic) |
+
+## Preparation Guide
+
+See [System Design Interview Preparation Guide](docs/INTERVIEW_PREPARATION_GUIDE.md)
+for how each feature helps, how to use it effectively, and a complete 45-minute
+mock interview workflow.
 
 ## GitHub Pages
 
@@ -27,8 +34,8 @@ stable `v*` tag is pushed:
 <https://pradhyumanarora.github.io/System-Design-Simulator/>
 
 GitHub Pages hosts only the static UI. The canvas, simulation, scoring, Design
-Notes and local persistence work without the server. Real-time collaboration is
-disabled in this mode.
+Notes, Data Model, Capacity Planning and local persistence work without the
+server. Real-time collaboration is disabled in this mode.
 
 Regular development can continue on `master` without changing the deployed
 site. Publish a new stable version by creating and pushing a version tag:
