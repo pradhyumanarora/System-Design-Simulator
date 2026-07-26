@@ -20,14 +20,22 @@ An interactive canvas for practising system design interviews — drag component
 
 ## GitHub Pages
 
-The frontend is deployed by `.github/workflows/deploy-pages.yml` whenever
-`master` is updated:
+The frontend is deployed by `.github/workflows/deploy-pages.yml` whenever a
+stable `v*` tag is pushed:
 
 <https://pradhyumanarora.github.io/System-Design-Simulator/>
 
 GitHub Pages hosts only the static UI. The canvas, simulation, scoring, Design
 Notes and local persistence work without the server. Real-time collaboration is
 disabled in this mode.
+
+Regular development can continue on `master` without changing the deployed
+site. Publish a new stable version by creating and pushing a version tag:
+
+```bash
+git tag -a v1.1.0 -m "v1.1.0"
+git push origin v1.1.0
+```
 
 To enable collaboration in another production environment, deploy
 `apps/server` separately and build the frontend with:
